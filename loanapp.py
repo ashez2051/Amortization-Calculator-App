@@ -463,7 +463,7 @@ def main():
     # App header with animation effect
     st.markdown("""
         <div style="text-align: center; animation: fadeIn 1.5s;">
-            <h1>💰 Elegant Loan Amortization Calculator</h1>
+            <h1>💰 Loan Amortization Calculator</h1>
             <p style="font-size: 1.2rem; color: #64748b; margin-bottom: 2rem;">
                 Make informed financial decisions with our powerful visualization tools
             </p>
