@@ -345,12 +345,13 @@ def plot_payment_breakdown(principal, total_interest):
     colors = ['#3b82f6', '#ef4444']
 
     fig = go.Figure(data=[go.Pie(
-    labels=labels,
-    values=values,
-    hole=.4,
-    textinfo='label+percent',
-    marker=dict(colors=colors))
-    ])
+        labels=labels,
+        values=values,
+        hole=.4,
+        textinfo='label+percent',
+        marker=dict(colors=colors),
+        textfont=dict(size=14, color='black')  # Ensure text is readable
+    )])
 
     fig.update_layout(
         title=dict(
@@ -387,7 +388,7 @@ def plot_monthly_breakdown(monthly_payment, extra_payment=0):
             'Regular Payment': '#3b82f6',
             'Extra Payment': '#10b981'
         },
-        text_auto='.2f'
+        text='Amount'  # Use the 'Amount' column for dynamic text
     )
 
     fig.update_layout(
@@ -402,8 +403,11 @@ def plot_monthly_breakdown(monthly_payment, extra_payment=0):
             showgrid=False
         ),
         yaxis=dict(
-            title="Amount ($)",
-            titlefont=dict(family="Poppins, sans-serif", size=14, color="#64748b")
+            title=dict(
+                text="Amount ($)",
+                font=dict(family="Poppins, sans-serif", size=14, color="#64748b")
+            ),
+            tickfont=dict(family="Poppins, sans-serif", size=12, color="#64748b")
         ),
         showlegend=False,
         plot_bgcolor="rgba(0,0,0,0)",
@@ -411,11 +415,13 @@ def plot_monthly_breakdown(monthly_payment, extra_payment=0):
     )
 
     fig.update_traces(
-        texttemplate='$%{text}',
-        textposition='outside'
+        texttemplate='$%{text:.2f}',
+        textposition='outside',
+        textfont=dict(size=14, color='black')  # Ensure text is readable
     )
 
     return fig
+
 
 def plot_comparison(data, title="Payment Comparison"):
     fig = px.bar(
@@ -429,7 +435,7 @@ def plot_comparison(data, title="Payment Comparison"):
             'Old Interest': '#f97316',
             'New Interest': '#10b981'
         },
-        text_auto='.2f'
+        text='Amount'  # Use the 'Amount' column for dynamic text
     )
 
     fig.update_layout(
@@ -445,7 +451,8 @@ def plot_comparison(data, title="Payment Comparison"):
         ),
         yaxis=dict(
             title="Amount ($)",
-            titlefont=dict(family="Poppins, sans-serif", size=14, color="#64748b")
+            titlefont=dict(family="Poppins, sans-serif", size=14, color="#64748b"),
+            tickfont=dict(family="Poppins, sans-serif", size=12, color="#64748b")
         ),
         showlegend=False,
         plot_bgcolor="rgba(0,0,0,0)",
@@ -454,7 +461,8 @@ def plot_comparison(data, title="Payment Comparison"):
 
     fig.update_traces(
         texttemplate='$%{text}',
-        textposition='outside'
+        textposition='outside',
+        textfont=dict(size=14, color='black')  # Ensure text is readable
     )
 
     return fig
@@ -465,7 +473,7 @@ def main():
         <div style="text-align: center; animation: fadeIn 1.5s;">
             <h1>💰 Loan Amortization Calculator</h1>
             <p style="font-size: 1.2rem; color: #64748b; margin-bottom: 2rem;">
-                Make informed financial decisions with our powerful visualization tools
+                Make informed financial decisions with powerful visualization tools
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -776,7 +784,7 @@ def main():
                                         x=['Original Loan', 'With Extra Payments'],
                                         y=[original_interest, new_interest],
                                         text=[f"${original_interest:,.2f}", f"${new_interest:,.2f}"],
-                                        textposition='outside',
+                                        textposition='auto',
                                         marker_color=['#ef4444', '#10b981']
                                     ))
 
@@ -798,7 +806,7 @@ def main():
                                         y=[original_months, new_months],
                                         text=[f"{original_months // 12}y {original_months % 12}m",
                                             f"{new_months // 12}y {new_months % 12}m"],
-                                        textposition='outside',
+                                        textposition='auto',
                                         marker_color=['#ef4444', '#10b981']
                                     ))
 
