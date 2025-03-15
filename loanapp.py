@@ -147,6 +147,17 @@ st.markdown("""
         border-color: #3b82f6 !important;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
     }
+            
+    /* Footer */
+    .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+        text-align: center;
+        padding: 10px 0;
+    }
 
     /* Info box styling */
     .stAlert {
@@ -906,6 +917,13 @@ def main():
                                         )
                         except Exception as e:
                             st.error(f"An error occurred during calculation. Please check your inputs and try again.")
+
+    # Footer
+    st.markdown("""
+        <div class="footer">
+            <p>© 2025 Ashesh Raj Gnawali</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
