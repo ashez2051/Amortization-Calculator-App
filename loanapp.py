@@ -7,7 +7,7 @@ import numpy as np
 
 # Set page configuration for a polished look
 st.set_page_config(
-    page_title="Elegant Loan Calculator",
+    page_title="Loan Calculator",
     layout="wide",
     initial_sidebar_state="expanded",
     page_icon="💰"
@@ -202,7 +202,7 @@ icons = {
     "personal": "💼",
     "education": "🎓",
     "payment": "💰",
-    "term": "⏱️",
+    "term": "⌛",
     "interest": "💹"
 }
 
@@ -334,12 +334,12 @@ def plot_payment_breakdown(principal, total_interest):
     colors = ['#3b82f6', '#ef4444']
 
     fig = go.Figure(data=[go.Pie(
-        labels=labels,
-        values=values,
-        hole=.4,
-        textinfo='label+percent',
-        marker=dict(colors=colors)
-    )])
+    labels=labels,
+    values=values,
+    hole=.4,
+    textinfo='label+percent',
+    marker=dict(colors=colors))
+    ])
 
     fig.update_layout(
         title=dict(
@@ -671,6 +671,146 @@ def main():
                                     use_container_width=True,
                                     height=400
                                 )
+
+                elif option == "Calculate Interest Saved":
+                    # Get baseline information
+                    years = st.slider(
+                        "Original Loan Term (Years)",
+                        min_value=1,
+                        max_value=40 if loan_type_key == "mortgage" else 10 if loan_type_key == "auto" else 7,
+                        value=30 if loan_type_key == "mortgage" else 5 if loan_type_key == "auto" else 3
+                    )
+
+                    num_payments = years * 12
+                    monthly_rate = annual_rate / 100 / 12
+
+                    # Calculate original monthly payment
+                    monthly_payment = (principal * monthly_rate) / (1 - (1 + monthly_rate) ** -num_payments) if monthly_rate > 0 else principal / num_payments
+
+                    # Get extra payment information
+                    extra_payment = st.number_input(
+                        "Extra Monthly Payment ($)",
+                        min_value=0.0,
+                        value=100.0,
+                        step=50.0,
+                        format="%.2f"
+                    )
+
+                    calc_button = st.button("Calculate Interest Saved", type="primary", use_container_width=True)
+                    if calc_button:
+                        with st.spinner("Calculating potential savings..."):
+                            # Add a slight delay for effect
+                            import time
+                            time.sleep(0.5)
+
+                            # Calculate original payment schedule
+                            original_schedule, original_months, original_interest = calculate_amortization_schedule(
+                                principal, annual_rate, monthly_payment, 0, start_date
+                            )
+
+                            # Calculate accelerated payment schedule
+                            new_schedule, new_months, new_interest = calculate_amortization_schedule(
+                                principal, annual_rate, monthly_payment, extra_payment, start_date
+                            )
+
+                            # Calculate savings
+                            interest_saved = original_interest - new_interest
+                            time_saved = original_months - new_months
+                            years_saved = time_saved // 12
+                            months_saved = time_saved % 12
+
+                            # Display metrics in cards
+                            st.markdown("### 💰 Interest Savings Analysis")
+
+                            col_metrics = st.columns(3)
+                            with col_metrics[0]:
+                                st.markdown(f"""
+                                    <div class="metric-card" style="border-left: 5px solid #10b981;">
+                                        <div class="metric-label">Interest Saved</div>
+                                        <div class="metric-value" style="color: #10b981;">${interest_saved:,.2f}</div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            with col_metrics[1]:
+                                st.markdown(f"""
+                                    <div class="metric-card" style="border-left: 5px solid #8b5cf6;">
+                                        <div class="metric-label">Time Saved</div>
+                                        <div class="metric-value" style="color: #8b5cf6;">{years_saved} yrs {months_saved} mths</div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            with col_metrics[2]:
+                                st.markdown(f"""
+                                    <div class="metric-card">
+                                        <div class="metric-label">Original Payoff</div>
+                                        <div class="metric-value">{original_months // 12} yrs {original_months % 12} mths</div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+
+                            # Create comparison data for visualization
+                            comparison_data = pd.DataFrame({
+                                'Category': ['Original Interest', 'Interest with Extra Payments', 'Time Reduction'],
+                                'Amount': [original_interest, new_interest, time_saved / original_months * 100],
+                                'Label': [f"${original_interest:,.2f}", f"${new_interest:,.2f}", f"{years_saved} yrs {months_saved} mths"]
+                            })
+
+                            # Create tabs for different visualizations
+                            viz_tab1, viz_tab2 = st.tabs(["Comparison Chart", "Detailed Schedule"])
+
+                            with viz_tab1:
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    # Plot interest comparison
+                                    comparison_fig = go.Figure()
+
+                                    comparison_fig.add_trace(go.Bar(
+                                        x=['Original Loan', 'With Extra Payments'],
+                                        y=[original_interest, new_interest],
+                                        text=[f"${original_interest:,.2f}", f"${new_interest:,.2f}"],
+                                        textposition='outside',
+                                        marker_color=['#ef4444', '#10b981']
+                                    ))
+
+                                    comparison_fig.update_layout(
+                                        title="Interest Comparison",
+                                        yaxis_title="Total Interest ($)",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                    )
+
+                                    st.plotly_chart(comparison_fig, use_container_width=True)
+
+                                with col2:
+                                    # Plot time comparison
+                                    time_fig = go.Figure()
+
+                                    time_fig.add_trace(go.Bar(
+                                        x=['Original Loan', 'With Extra Payments'],
+                                        y=[original_months, new_months],
+                                        text=[f"{original_months // 12}y {original_months % 12}m",
+                                            f"{new_months // 12}y {new_months % 12}m"],
+                                        textposition='outside',
+                                        marker_color=['#ef4444', '#10b981']
+                                    ))
+
+                                    time_fig.update_layout(
+                                        title="Loan Term Comparison",
+                                        yaxis_title="Months to Payoff",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                    )
+
+                                    st.plotly_chart(time_fig, use_container_width=True)
+
+                            with viz_tab2:
+                                st.dataframe(
+                                    new_schedule.style.format({
+                                        "Total Payment": "${:,.2f}",
+                                        "Interest": "${:,.2f}",
+                                        "Principal": "${:,.2f}",
+                                        "Remaining Balance": "${:,.2f}"
+                                    }),
+                                    use_container_width=True,
+                                    height=400
+                                )
                 elif option == "Calculate Loan Term":
                     # Calculate the minimum payment required (interest-only payment)
                     min_payment = principal * (annual_rate / 100 / 12) if annual_rate > 0 else 1.0
@@ -697,12 +837,6 @@ def main():
                         format="%.2f"
                     )
 
-                    # Create a placeholder for results
-                    results_placeholder = st.empty()
-
-                    # Debug: Print input values to console
-                    st.write(f"Debug - Principal: ${principal}, Rate: {annual_rate}%, Monthly Payment: ${monthly_payment}, Extra: ${extra_payment}")
-
                     # Make the button more prominent
                     st.markdown("### Click below to calculate your loan term")
                     calc_button = st.button("Calculate Loan Term", type="primary", use_container_width=True)
@@ -713,207 +847,65 @@ def main():
                                 import time
                                 time.sleep(0.5)  # Simulate processing delay
 
-                                # Calculate the amortization schedule
-                                schedule, months, total_interest = calculate_amortization_schedule(
-                                    principal, annual_rate, monthly_payment, extra_payment, start_date
-                                )
-
-                                # Debug: Print calculation results
-                                st.write(f"Debug - Months: {months}, Total Interest: ${total_interest:.2f}, Schedule Length: {len(schedule)}")
-
-                                if months <= 0 or len(schedule) == 0:
-                                    results_placeholder.error("The payment amount is too small to pay off the loan or an error occurred. Please increase your monthly payment or check inputs.")
+                                # Validate monthly payment
+                                if monthly_payment <= min_payment:
+                                    st.error(f"Monthly payment must be greater than the minimum interest-only payment of ${min_payment:.2f}.")
                                 else:
+                                    # Calculate the amortization schedule
+                                    schedule, months, total_interest = calculate_amortization_schedule(
+                                        principal, annual_rate, monthly_payment, extra_payment, start_date
+                                    )
+
                                     years = months // 12
 
-                                    # Use the results placeholder to display results
-                                    with results_placeholder.container():
-                                        st.markdown("### 📊 Term Analysis Results")
+                                    # Display results
+                                    st.markdown("### 📊 Term Analysis Results")
 
-                                        col_metrics = st.columns(3)
-                                        with col_metrics[0]:
-                                            st.markdown(f"""
-                                                <div class="metric-card">
-                                                    <div class="metric-label">Payoff Time</div>
-                                                    <div class="metric-value">{years} yrs {months % 12} mths</div>
-                                                </div>
-                                            """, unsafe_allow_html=True)
-                                        with col_metrics[1]:
-                                            st.markdown(f"""
-                                                <div class="metric-card">
-                                                    <div class="metric-label">Total Interest</div>
-                                                    <div class="metric-value">${total_interest:,.2f}</div>
-                                                </div>
-                                            """, unsafe_allow_html=True)
-                                        with col_metrics[2]:
-                                            st.markdown(f"""
-                                                <div class="metric-card">
-                                                    <div class="metric-label">Total Payments</div>
-                                                    <div class="metric-value">${principal + total_interest:,.2f}</div>
-                                                </div>
-                                            """, unsafe_allow_html=True)
+                                    col_metrics = st.columns(3)
+                                    with col_metrics[0]:
+                                        st.markdown(f"""
+                                            <div class="metric-card">
+                                                <div class="metric-label">Payoff Time</div>
+                                                <div class="metric-value">{years} yrs {months % 12} mths</div>
+                                            </div>
+                                        """, unsafe_allow_html=True)
+                                    with col_metrics[1]:
+                                        st.markdown(f"""
+                                            <div class="metric-card">
+                                                <div class="metric-label">Total Interest</div>
+                                                <div class="metric-value">${total_interest:,.2f}</div>
+                                            </div>
+                                        """, unsafe_allow_html=True)
+                                    with col_metrics[2]:
+                                        st.markdown(f"""
+                                            <div class="metric-card">
+                                                <div class="metric-label">Total Payments</div>
+                                                <div class="metric-value">${principal + total_interest:,.2f}</div>
+                                            </div>
+                                        """, unsafe_allow_html=True)
 
-                                        # Create tabs for different visualizations
-                                        viz_tab1, viz_tab2 = st.tabs(["Amortization Chart", "Detailed Schedule"])
+                                    # Create tabs for different visualizations
+                                    viz_tab1, viz_tab2 = st.tabs(["Amortization Chart", "Detailed Schedule"])
 
-                                        with viz_tab1:
-                                            st.plotly_chart(
-                                                plot_amortization(schedule, loan_type_key),
-                                                use_container_width=True
-                                            )
+                                    with viz_tab1:
+                                        st.plotly_chart(
+                                            plot_amortization(schedule, loan_type_key),
+                                            use_container_width=True
+                                        )
 
-                                        with viz_tab2:
-                                            st.dataframe(
-                                                schedule.style.format({
-                                                    "Total Payment": "${:,.2f}",
-                                                    "Interest": "${:,.2f}",
-                                                    "Principal": "${:,.2f}",
-                                                    "Remaining Balance": "${:,.2f}"
-                                                }),
-                                                use_container_width=True,
-                                                height=400
-                                            )
+                                    with viz_tab2:
+                                        st.dataframe(
+                                            schedule.style.format({
+                                                "Total Payment": "${:,.2f}",
+                                                "Interest": "${:,.2f}",
+                                                "Principal": "${:,.2f}",
+                                                "Remaining Balance": "${:,.2f}"
+                                            }),
+                                            use_container_width=True,
+                                            height=400
+                                        )
                         except Exception as e:
-                            st.error(f"Error during calculation: {str(e)}")
-                            st.write("Debug - Exception occurred, check inputs or code logic.")
-                elif option == "Calculate Interest Saved":
-                        # Get baseline information
-                        years = st.slider(
-                            "Original Loan Term (Years)",
-                            min_value=1,
-                            max_value=40 if loan_type_key == "mortgage" else 10 if loan_type_key == "auto" else 7,
-                            value=30 if loan_type_key == "mortgage" else 5 if loan_type_key == "auto" else 3
-                        )
+                            st.error(f"An error occurred during calculation. Please check your inputs and try again.")
 
-                        num_payments = years * 12
-                        monthly_rate = annual_rate / 100 / 12
-
-                        # Calculate original monthly payment
-                        monthly_payment = (principal * monthly_rate) / (1 - (1 + monthly_rate) ** -num_payments) if monthly_rate > 0 else principal / num_payments
-
-                        # Get extra payment information
-                        extra_payment = st.number_input(
-                            "Extra Monthly Payment ($)",
-                            min_value=0.0,
-                            value=100.0,
-                            step=50.0,
-                            format="%.2f"
-                        )
-
-                        calc_button = st.button("Calculate Interest Saved", type="primary", use_container_width=True)
-                        if calc_button:
-                            with st.spinner("Calculating potential savings..."):
-                                # Add a slight delay for effect
-                                import time
-                                time.sleep(0.5)
-
-                                # Calculate original payment schedule
-                                original_schedule, original_months, original_interest = calculate_amortization_schedule(
-                                    principal, annual_rate, monthly_payment, 0, start_date
-                                )
-
-                                # Calculate accelerated payment schedule
-                                new_schedule, new_months, new_interest = calculate_amortization_schedule(
-                                    principal, annual_rate, monthly_payment, extra_payment, start_date
-                                )
-
-                                # Calculate savings
-                                interest_saved = original_interest - new_interest
-                                time_saved = original_months - new_months
-                                years_saved = time_saved // 12
-                                months_saved = time_saved % 12
-
-                                # Display metrics in cards
-                                st.markdown("### 💰 Interest Savings Analysis")
-
-                                col_metrics = st.columns(3)
-                                with col_metrics[0]:
-                                    st.markdown(f"""
-                                        <div class="metric-card" style="border-left: 5px solid #10b981;">
-                                            <div class="metric-label">Interest Saved</div>
-                                            <div class="metric-value" style="color: #10b981;">${interest_saved:,.2f}</div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                with col_metrics[1]:
-                                    st.markdown(f"""
-                                        <div class="metric-card" style="border-left: 5px solid #8b5cf6;">
-                                            <div class="metric-label">Time Saved</div>
-                                            <div class="metric-value" style="color: #8b5cf6;">{years_saved} yrs {months_saved} mths</div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                with col_metrics[2]:
-                                    st.markdown(f"""
-                                        <div class="metric-card">
-                                            <div class="metric-label">Original Payoff</div>
-                                            <div class="metric-value">{original_months // 12} yrs {original_months % 12} mths</div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-
-                                # Create comparison data for visualization
-                                comparison_data = pd.DataFrame({
-                                    'Category': ['Original Interest', 'Interest with Extra Payments', 'Time Reduction'],
-                                    'Amount': [original_interest, new_interest, time_saved / original_months * 100],
-                                    'Label': [f"${original_interest:,.2f}", f"${new_interest:,.2f}", f"{years_saved} yrs {months_saved} mths"]
-                                })
-
-                                # Create tabs for different visualizations
-                                viz_tab1, viz_tab2 = st.tabs(["Comparison Chart", "Detailed Schedule"])
-
-                                with viz_tab1:
-                                    col1, col2 = st.columns(2)
-                                    with col1:
-                                        # Plot interest comparison
-                                        comparison_fig = go.Figure()
-
-                                        comparison_fig.add_trace(go.Bar(
-                                            x=['Original Loan', 'With Extra Payments'],
-                                            y=[original_interest, new_interest],
-                                            text=[f"${original_interest:,.2f}", f"${new_interest:,.2f}"],
-                                            textposition='outside',
-                                            marker_color=['#ef4444', '#10b981']
-                                        ))
-
-                                        comparison_fig.update_layout(
-                                            title="Interest Comparison",
-                                            yaxis_title="Total Interest ($)",
-                                            plot_bgcolor="rgba(0,0,0,0)",
-                                            paper_bgcolor="rgba(0,0,0,0)",
-                                        )
-
-                                        st.plotly_chart(comparison_fig, use_container_width=True)
-
-                                    with col2:
-                                        # Plot time comparison
-                                        time_fig = go.Figure()
-
-                                        time_fig.add_trace(go.Bar(
-                                            x=['Original Loan', 'With Extra Payments'],
-                                            y=[original_months, new_months],
-                                            text=[f"{original_months // 12}y {original_months % 12}m",
-                                                f"{new_months // 12}y {new_months % 12}m"],
-                                            textposition='outside',
-                                            marker_color=['#ef4444', '#10b981']
-                                        ))
-
-                                        time_fig.update_layout(
-                                            title="Loan Term Comparison",
-                                            yaxis_title="Months to Payoff",
-                                            plot_bgcolor="rgba(0,0,0,0)",
-                                            paper_bgcolor="rgba(0,0,0,0)",
-                                        )
-
-                                        st.plotly_chart(time_fig, use_container_width=True)
-
-                                with viz_tab2:
-                                    st.dataframe(
-                                        new_schedule.style.format({
-                                            "Total Payment": "${:,.2f}",
-                                            "Interest": "${:,.2f}",
-                                            "Principal": "${:,.2f}",
-                                            "Remaining Balance": "${:,.2f}"
-                                        }),
-                                        use_container_width=True,
-                                        height=400
-                                    )
 if __name__ == "__main__":
     main()
